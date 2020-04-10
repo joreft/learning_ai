@@ -1,0 +1,96 @@
+#pragma once
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <vector>
+
+namespace jeagle
+{
+
+template<std::size_t HEIGHT, std::size_t WIDTH>
+struct Matrix
+{
+    static constexpr std::size_t height = HEIGHT;
+    static constexpr std::size_t width = WIDTH;
+
+    Matrix() : values(height*width, 0)
+    {}
+
+    Matrix(std::array<float, height*width> const& init)
+    {
+        static_assert(init.size() == height*width);
+
+        *this = Matrix(); // zero initialise
+        std::copy(init.begin(), init.end(), values.data());
+    }
+
+    Matrix(std::vector<float> init) : values(std::move(init))
+    {}
+
+    std::vector<float> values; // indexing follows x+width*y
+};
+
+template<std::size_t VECTOR_SIZE>
+struct ColumnVector
+{
+    static constexpr std::size_t vector_size = VECTOR_SIZE;
+
+    std::vector<float> values;
+
+    ColumnVector() : values(vector_size, 0)
+    {}
+
+    ColumnVector(std::array<float, vector_size> const& init)
+    {
+        *this = ColumnVector();
+        std::copy(init.begin(), init.end(), values.data());
+    }
+
+    ColumnVector(std::vector<float> init) : values(std::move(init))
+    {}
+};
+
+template<typename MatrixType, typename ColumnVectorType>
+auto multiply(MatrixType const &matrix, ColumnVectorType const &column_vector)
+{
+    static_assert(MatrixType::width == ColumnVectorType::vector_size);
+
+    auto out = ColumnVector<MatrixType::height>();
+    for (std::size_t y = 0; y < MatrixType::height; ++y)
+    {
+        for (std::size_t x = 0; x < MatrixType::width; ++x)
+        {
+            out.values.at(y) += matrix.values.at(x + MatrixType::height * y) * column_vector.values.at(x);
+        }
+    }
+
+    return out;
+}
+
+template<typename MatrixType, typename ColumnVectorType>
+auto operator*(MatrixType const &matrix, ColumnVectorType const &column_vector)
+{
+    return multiply(matrix, column_vector);
+}
+
+template <typename ColumnVectorType>
+auto operator+(ColumnVectorType const& lhs, ColumnVectorType const& rhs)
+{
+    auto out = ColumnVectorType();
+    for (std::size_t i = 0; i < ColumnVectorType::vector_size; ++i)
+    {
+        out.values.at(i) = lhs.values.at(i) + rhs.values.at(i);
+    }
+
+    return out;
+}
+
+constexpr float sigmoid(float in)
+{
+    return 1/(1+std::exp(-in));
+}
+
+} // namespace jeagle
+
+void test();
