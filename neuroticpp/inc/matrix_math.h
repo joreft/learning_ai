@@ -68,6 +68,18 @@ auto multiply(MatrixType const &matrix, ColumnVectorType const &column_vector)
     return out;
 }
 
+template <typename ColumnVectorType>
+auto hadamard(ColumnVectorType const& lhs, ColumnVectorType const& rhs)
+{
+    ColumnVectorType out();
+    for (std::size_t y = 0; y < ColumnVectorType::vector_size; ++y)
+    {
+        out.values.emplace_back(lhs.at(y) * rhs.at(y));
+    }
+
+    return out;
+}
+
 template<typename MatrixType, typename ColumnVectorType>
 auto operator*(MatrixType const &matrix, ColumnVectorType const &column_vector)
 {
@@ -89,6 +101,11 @@ auto operator+(ColumnVectorType const& lhs, ColumnVectorType const& rhs)
 constexpr float sigmoid(float in)
 {
     return 1/(1+std::exp(-in));
+}
+
+constexpr float sigmoid_derivative(float in)
+{
+    return sigmoid(in) * (1 - sigmoid(in));
 }
 
 } // namespace jeagle

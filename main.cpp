@@ -6,7 +6,7 @@
 #include <future>
 #include "mnist_parser.h"
 
-
+using namespace jeagle;
 std::vector<float> image_to_first_layer_activation_values(Image const& image)
 {
     std::vector<float> out;
@@ -44,8 +44,36 @@ std::vector<LabelImageZip> zip(std::vector<Image> const& images, std::vector<int
     return out;
 }
 
-using namespace jeagle;
-void train_network(jeagle::SampleNetwork& net, std::vector<Image> const& images, std::vector<int> const& labels)
+void train_network(SampleNetwork& net, std::vector<Image> const& images, std::vector<int> const& labels, float learning_rate)
+{
+    auto zipped = zip(images, labels);
+
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(zipped.begin(), zipped.end(), g);
+    auto const  batch_size = zipped.size() / 40; // only take the first 1/40 of the randomly shuffled samples
+
+    auto const sigmoid_differentiate = [](auto& val)
+    {
+        val = sigmoid_derivative(val);
+    };
+    for (std::size_t i = 0; i < batch_size; ++i)
+    {
+        auto const& image = zipped.at(i).image;
+        auto const target = zipped.at(i).label;
+
+        net.process_input(image_to_first_layer_activation_values(image));
+        auto const& results = net.final_layer.activation_values;
+
+        std::for_each(results.begin())
+
+        auto const output_error = hadamard();
+
+    }
+
+}
+
+void calculate_cost(jeagle::SampleNetwork& net, std::vector<Image> const& images, std::vector<int> const& labels)
 {
     if (labels.size() != images.size()) throw "panic at the disco";
 
@@ -67,6 +95,8 @@ void train_network(jeagle::SampleNetwork& net, std::vector<Image> const& images,
 
         net.process_input(image_to_first_layer_activation_values(image));
         auto const& results = net.final_layer.activation_values;
+
+
         float cost = 0;
         for (int u = 0; u < 10; ++u)
         {
@@ -101,7 +131,7 @@ int main()
     jeagle::SampleNetwork neural_net {};
 
     auto const start_time = std::chrono::system_clock::now();
-    train_network(neural_net, training_images, training_labels);
+    train_network(neural_net, training_images, training_labels, 30.f);
     auto const train_time = std::chrono::system_clock::now() - start_time;
 
     auto const elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(train_time).count();
