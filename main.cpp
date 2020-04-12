@@ -53,22 +53,13 @@ void train_network(SampleNetwork& net, std::vector<Image> const& images, std::ve
     std::shuffle(zipped.begin(), zipped.end(), g);
     auto const  batch_size = zipped.size() / 40; // only take the first 1/40 of the randomly shuffled samples
 
-    auto const sigmoid_differentiate = [](auto& val)
-    {
-        val = sigmoid_derivative(val);
-    };
     for (std::size_t i = 0; i < batch_size; ++i)
     {
         auto const& image = zipped.at(i).image;
         auto const target = zipped.at(i).label;
 
         net.process_input(image_to_first_layer_activation_values(image));
-        auto const& results = net.final_layer.activation_values;
-
-        std::for_each(results.begin())
-
-        auto const output_error = hadamard();
-
+        net.backpropagate(target);
     }
 
 }

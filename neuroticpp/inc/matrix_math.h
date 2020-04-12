@@ -28,6 +28,11 @@ struct Matrix
     Matrix(std::vector<float> init) : values(std::move(init))
     {}
 
+    auto& at(std::size_t x, std::size_t y)
+    {
+        return values.at(x + y * width);
+    }
+
     std::vector<float> values; // indexing follows x+width*y
 };
 
@@ -49,6 +54,43 @@ struct ColumnVector
 
     ColumnVector(std::vector<float> init) : values(std::move(init))
     {}
+
+    template <typename ColumnVectorType>
+    auto operator+(ColumnVectorType const& other)
+    {
+        auto out = ColumnVectorType();
+        for (std::size_t i = 0; i < ColumnVectorType::vector_size; ++i)
+        {
+            out.values.at(i) = this->values.at(i) + other.values.at(i);
+        }
+
+        return out;
+    }
+
+    template <typename ColumnVectorType>
+    auto operator-(ColumnVectorType const& other)
+    {
+        auto out = ColumnVectorType();
+        for (std::size_t i = 0; i < ColumnVectorType::vector_size; ++i)
+        {
+            out.values.at(i) = this->values.at(i) - other.values.at(i);
+        }
+
+        return out;
+    }
+
+    template <typename MatrixType>
+    auto dot_product(MatrixType const& mat)
+    {
+        auto out = Matrix<MatrixType::width, MatrixType::height>();
+        for (std::size_t column_counter = 0; column_counter < MatrixType::width; ++ column_counter)
+        {
+            for (std::size_t i = 0; i < vector_size; ++i)
+            {
+                out.at(column_counter, )
+            }
+        }
+    }
 };
 
 template<typename MatrixType, typename ColumnVectorType>
@@ -71,10 +113,10 @@ auto multiply(MatrixType const &matrix, ColumnVectorType const &column_vector)
 template <typename ColumnVectorType>
 auto hadamard(ColumnVectorType const& lhs, ColumnVectorType const& rhs)
 {
-    ColumnVectorType out();
+    auto out = ColumnVectorType();
     for (std::size_t y = 0; y < ColumnVectorType::vector_size; ++y)
     {
-        out.values.emplace_back(lhs.at(y) * rhs.at(y));
+        out.values.emplace_back(lhs.values.at(y) * rhs.values.at(y));
     }
 
     return out;
@@ -84,18 +126,6 @@ template<typename MatrixType, typename ColumnVectorType>
 auto operator*(MatrixType const &matrix, ColumnVectorType const &column_vector)
 {
     return multiply(matrix, column_vector);
-}
-
-template <typename ColumnVectorType>
-auto operator+(ColumnVectorType const& lhs, ColumnVectorType const& rhs)
-{
-    auto out = ColumnVectorType();
-    for (std::size_t i = 0; i < ColumnVectorType::vector_size; ++i)
-    {
-        out.values.at(i) = lhs.values.at(i) + rhs.values.at(i);
-    }
-
-    return out;
 }
 
 constexpr float sigmoid(float in)

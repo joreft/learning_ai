@@ -37,10 +37,12 @@ struct Layer
         if (out.size() != NEXT_LAYER_SIZE)
         {
             fmt::print("Length is {}\n", out.size());
-            throw 2;
+            throw 2; // TODO oh well
         }
         return out;
     }
+
+
 };
 
 template <typename LayerType>
@@ -77,6 +79,31 @@ struct SampleNetwork
         second_layer.activation_values = first_layer.calculate_activation_values_for_next_layer();
         third_layer.activation_values = second_layer.calculate_activation_values_for_next_layer();
         final_layer.activation_values = third_layer.calculate_activation_values_for_next_layer();
+    }
+
+    void backpropagate(int target_value)
+    {
+        auto results = final_layer.activation_values;
+
+        auto target_vector = ColumnVector<10>();
+        target_vector.values.at(target_value) = 1;
+
+        auto constexpr sigmoid_differentiate = [](auto& val)
+        {
+            val = sigmoid_derivative(val);
+        };
+
+        auto const dc_da = ColumnVector<10> {results} - target_vector;
+
+        std::for_each(results.begin(), results.end(), sigmoid_differentiate);
+
+        auto const output_error = hadamard(dc_da, ColumnVector<10> {results} );
+
+        auto const nabla_biases = output_error;
+
+                                // dot the output error with activation values from the preceding layer (transposed)
+        //auto const nabla_weights = output_error
+
     }
 };
 

@@ -6,6 +6,7 @@ sdl2_ttf/2.0.15@bincrafters/stable
 fmt/6.1.2
 bzip2/1.0.8
 boost/1.72.0
+eigen/3.3.7@conan/stable
 
 [generators]
 cmake
