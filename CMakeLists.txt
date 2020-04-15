@@ -52,6 +52,7 @@ set(CMAKE_MODULE_PATH /usr/share/SFML/cmake/Modules ${CMAKE_BINARY_DIR})
 find_package(sdl2 REQUIRED)
 find_package(sdl2_ttf REQUIRED)
 find_package(fmt REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 add_subdirectory(neuroticpp)
 
@@ -62,4 +63,5 @@ target_link_libraries(leikeplass PRIVATE
                                         sdl2::sdl2
                                         sdl2_ttf::sdl2_ttf
                                         fmt::fmt
+                                        Eigen3::Eigen3
                                         neuroticpp)

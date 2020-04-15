@@ -188,7 +188,8 @@ struct SDLAbstraction
         SDL_RenderClear(&renderer);
     }
 
-    void draw_network(std::size_t offset_x, std::size_t offset_y, jeagle::SampleNetwork const& net)
+    template <typename NetworkType>
+    void draw_network(std::size_t offset_x, std::size_t offset_y, NetworkType const& net)
     {
         auto const set_color = [&](float activation_value)
         {
@@ -210,7 +211,7 @@ struct SDLAbstraction
                                neuron_size};
 
 
-                set_color(layer.activation_values.at(i));
+                set_color(layer.activation_values[i]);
                 SDL_RenderDrawRect(&renderer, &rect);
                 SDL_RenderFillRect(&renderer, &rect);
             }
@@ -218,7 +219,7 @@ struct SDLAbstraction
         std::cout << "Second layer size: " << net.second_layer.activation_values.size() << "\n";
 
         draw_layer(10, net.second_layer);
-        draw_layer(20 + neuron_size , net.third_layer);
+        //draw_layer(20 + neuron_size , net.third_layer);
         draw_layer(30 + neuron_size*2, net.final_layer);
 
         fmt::print("Output values:\n");

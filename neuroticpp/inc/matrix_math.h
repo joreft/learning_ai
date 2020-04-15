@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 
+
 namespace jeagle
 {
 
@@ -87,7 +88,7 @@ struct ColumnVector
         {
             for (std::size_t i = 0; i < vector_size; ++i)
             {
-                out.at(column_counter, )
+               // out.at(column_counter, )
             }
         }
     }
@@ -109,6 +110,7 @@ auto multiply(MatrixType const &matrix, ColumnVectorType const &column_vector)
 
     return out;
 }
+/*
 
 template <typename ColumnVectorType>
 auto hadamard(ColumnVectorType const& lhs, ColumnVectorType const& rhs)
@@ -128,12 +130,15 @@ auto operator*(MatrixType const &matrix, ColumnVectorType const &column_vector)
     return multiply(matrix, column_vector);
 }
 
-constexpr float sigmoid(float in)
+
+*/
+
+constexpr double sigmoid(double in)
 {
     return 1/(1+std::exp(-in));
 }
 
-constexpr float sigmoid_derivative(float in)
+constexpr double sigmoid_derivative(double in)
 {
     return sigmoid(in) * (1 - sigmoid(in));
 }

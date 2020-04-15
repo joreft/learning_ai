@@ -59,7 +59,7 @@ Image read_image_from_file(int const rows, int const columns, std::ifstream& ist
             throw MnistParseError("File ended unexpectedly");
         }
 
-        out.push_back(c);
+        out.emplace_back(c);
     }
 
     return out;
