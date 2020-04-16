@@ -88,3 +88,22 @@ std::vector<Image> parse_images_file(std::string const& path)
 
     return out;
 }
+
+
+struct LabelImageZip
+{
+    Image image;
+    int label;
+};
+
+std::vector<LabelImageZip> zip(std::vector<Image> const& images, std::vector<int> const& labels)
+{
+    std::vector<LabelImageZip> out;
+    out.reserve(images.size());
+    for (std::size_t i = 0; i < images.size(); ++i)
+    {
+        out.emplace_back(LabelImageZip{images.at(i), labels.at(i)});
+    }
+
+    return out;
+}

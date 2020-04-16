@@ -63,5 +63,5 @@ target_link_libraries(leikeplass PRIVATE
                                         sdl2::sdl2
                                         sdl2_ttf::sdl2_ttf
                                         fmt::fmt
-                                        Eigen3::Eigen3
-                                        neuroticpp)
+                                        Eigen3::Eigen3)
+                                       # neuroticpp)

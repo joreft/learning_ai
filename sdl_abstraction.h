@@ -3,7 +3,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
-#include "neuroticpp.h"
+//#include "neuroticpp.h"
 #include "mnist_parser.h"
 
 #include <chrono>
@@ -201,32 +201,32 @@ struct SDLAbstraction
         static constexpr std::size_t neuron_size = 15; // 4 x 4 rectangles
         static constexpr std::size_t spacing = 2;
 
-        auto const draw_layer = [&](std::size_t layer_offset_x, auto const& layer)
+        auto layer_offset_x = 20;
+        auto const draw_layer = [&](auto const& activation_values)
         {
-            for (std::size_t i = 0; i < layer.activation_values.size(); ++i)
+            for (long int i = 0; i < activation_values.size(); ++i)
             {
                 SDL_Rect rect {static_cast<int>(layer_offset_x + offset_x),
                                static_cast<int>(offset_y + i * neuron_size + i*spacing),
                                neuron_size,
                                neuron_size};
 
-
-                set_color(layer.activation_values[i]);
+                set_sdl_color(renderer, red);
                 SDL_RenderDrawRect(&renderer, &rect);
+                set_color(activation_values(i));
                 SDL_RenderFillRect(&renderer, &rect);
             }
         };
-        std::cout << "Second layer size: " << net.second_layer.activation_values.size() << "\n";
 
-        draw_layer(10, net.second_layer);
-        //draw_layer(20 + neuron_size , net.third_layer);
-        draw_layer(30 + neuron_size*2, net.final_layer);
+//        draw_layer(net.input.activation_values);
 
-        fmt::print("Output values:\n");
-        for (std::size_t i = 0; i < net.final_layer.activation_values.size(); ++i)
+        for (auto const& layer : net.layers)
         {
-            fmt::print("----{}\n", net.final_layer.activation_values[i]);
+            draw_layer(layer.activation_values);
+            layer_offset_x += 15 + neuron_size * 2;
         }
+
+        draw_layer(net.output.activation_values);
     }
 
 /*

@@ -133,15 +133,6 @@ auto operator*(MatrixType const &matrix, ColumnVectorType const &column_vector)
 
 */
 
-constexpr double sigmoid(double in)
-{
-    return 1/(1+std::exp(-in));
-}
-
-constexpr double sigmoid_derivative(double in)
-{
-    return sigmoid(in) * (1 - sigmoid(in));
-}
 
 } // namespace jeagle
 
