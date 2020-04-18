@@ -117,7 +117,7 @@ struct SDLContextOwner
             std::cout << "SDL_Init failed with err: " << SDL_GetError() << "\n";
         }
 
-        auto const create_window_ret = SDL_CreateWindowAndRenderer(500, 400, 0, &window, &renderer);
+        auto const create_window_ret = SDL_CreateWindowAndRenderer(1000, 1000, 0, &window, &renderer);
         if (create_window_ret != 0)
         {
             std::cout << "SDL_CreateWindowAndRenderer failed with err: " << SDL_GetError() << "\n";
@@ -223,7 +223,7 @@ struct SDLAbstraction
         for (auto const& layer : net.layers)
         {
             draw_layer(layer.activation_values);
-            layer_offset_x += 15 + neuron_size * 2;
+            layer_offset_x += 150 + neuron_size * 2;
         }
 
         draw_layer(net.output.activation_values);
