@@ -175,7 +175,7 @@ void load_input(InputLayer& input, Image const& image)
 }
 
 // TODO find better place for this
-constexpr std::array nodes_per_layer {28*28, 16, 16, 10};
+constexpr std::array nodes_per_layer {28*28, 16, 5,10};
 
 void initialise_network(Network& net)
 {
@@ -187,6 +187,9 @@ void initialise_network(Network& net)
 
     std::normal_distribution<> weights {0,1};
     std::normal_distribution<> biases {0,1};
+
+//    std::uniform_real_distribution<> biases {-2,2};
+//    std::uniform_real_distribution<> weights {-2,2};
 
 //    weights(g);
 
@@ -227,27 +230,24 @@ void initialise_network(Network& net)
 void feed_forward(Network& net,
                   std::function<double(double)> activation_function = [](double val) { return sigmoid(val); })
 {
-    long int n = 0;
-
-    net.layers.at(n).stored_input =  (net.input.outgoing_weights * net.input.activation_values + net.layers.at(n).biases);
-    net.layers.at(n).activation_values =  net.layers.at(n).stored_input.unaryExpr(activation_function);
-
-    ++n;
-
-    while (n < static_cast<long int>(net.layers.size()))
+    auto propagate_forward = [&activation_function](auto& from_layer, auto& to_layer)
     {
-        auto const new_values = net.layers.at(n - 1).outgoing_weights * net.layers.at(n - 1).activation_values + net.layers.at(n).biases;
+        to_layer.stored_input =  (from_layer.outgoing_weights * from_layer.activation_values + to_layer.biases);
+        to_layer.activation_values =  to_layer.stored_input.unaryExpr(activation_function);
+    };
 
-        net.layers.at(n).stored_input = new_values;
-        net.layers.at(n).activation_values = new_values.unaryExpr(activation_function);
+    propagate_forward(net.input, net.layers.front());
+    net.input.activation_values = net.input.stored_input;
+
+    long int n = 0;
+    while (n < static_cast<long int>(net.layers.size()) - 1)
+    {
+        propagate_forward(net.layers.at(n), net.layers.at(n + 1));
         ++n;
     }
 
-    net.output.stored_input =  (net.layers.back().outgoing_weights * net.layers.back().activation_values + net.output.biases);
-    net.output.activation_values = net.output.stored_input.unaryExpr(activation_function);
+        propagate_forward(net.layers.back(), net.output);
 }
-
-
 
 double network_accuracy_percentage(Network& net, std::vector<LabelImageZip> const& test_dataset)
 {
@@ -291,11 +291,11 @@ std::vector<BackpropagationResult> run_backpropagation(Network& net, LabelImageZ
     feed_forward(net);
 
     // TODO: change with the activation function for the output layer
-    Eigen::VectorXd error = (net.output.activation_values - vectorized_result(data_point.label)).cwiseProduct(net.output.stored_input.unaryExpr(activation_derivative));
+    Eigen::VectorXd error;// = (net.output.activation_values - vectorized_result(3)).cwiseProduct(net.output.stored_input.unaryExpr(activation_derivative));
 
     auto output_to_last_hidden_layer = [&]()
     {
-        error = (net.output.activation_values - vectorized_result(data_point.label)).cwiseProduct(net.output.stored_input.unaryExpr(activation_derivative));
+        error = (vectorized_result(data_point.label) - net.output.activation_values).cwiseProduct(net.output.stored_input.unaryExpr(activation_derivative));
         auto const nabla_weights = error * net.layers.back().activation_values.transpose();
         return BackpropagationResult{error, nabla_weights};
     };
@@ -317,11 +317,9 @@ std::vector<BackpropagationResult> run_backpropagation(Network& net, LabelImageZ
 
     results.emplace_back(output_to_last_hidden_layer());
 
-    std::size_t n = net.layers.size() - 1;
     for (auto it = net.layers.crbegin(); it != (net.layers.crend() - 1); ++it)
     {
         results.emplace_back(backward_pass(*it, *(it + 1)));
-        --n;
     }
 
     results.emplace_back(backward_pass(net.layers.at(0), net.input));
@@ -352,7 +350,7 @@ void process_mini_batch(Network& net, std::vector<LabelImageZip> const& training
         auto const new_nablas = run_backpropagation(net, data);
 
         // accumulate nablas
-        for (auto it = new_nablas.begin(); it != (new_nablas.end() - 1); ++it)
+        for (auto it = new_nablas.begin(); it != (new_nablas.end()); ++it)
         {
             auto const idx = it - new_nablas.cbegin();
 
@@ -369,12 +367,12 @@ void process_mini_batch(Network& net, std::vector<LabelImageZip> const& training
 
     for (std::size_t i = 1; i < (biases.size() - 1); ++i)
     {
-        net.layers.at(i - 1).outgoing_weights += (learning_rate/static_cast<double>(weights.size())) * weights.at(i);
+        net.layers.at(i - 1).outgoing_weights += (learning_rate / static_cast<double>(weights.size())) * weights.at(i);
         net.layers.at(i).biases += learning_rate * (biases.at(i)) / static_cast<double>(weights.size());
     }
 
     net.layers.back().outgoing_weights += learning_rate * (weights.back() / static_cast<double>(weights.size()));
-    net.output.biases += learning_rate * (biases.back() / static_cast<double>(weights.size()));
+    net.output.biases += (learning_rate / static_cast<double>(weights.size())) * biases.back();
 }
 
 void stochastic_gradient_descent(Network& net, std::vector<LabelImageZip> training_dataset,
@@ -400,7 +398,7 @@ void stochastic_gradient_descent(Network& net, std::vector<LabelImageZip> traini
                                                  begin(training_dataset) + batch_counter * batch_size + batch_size ),
                                learning_rate);
         }
-
+        fmt::print("Finished with epoch {}/{}\n", epoch_counter + 1, epochs);
     }
 
 }
@@ -419,20 +417,22 @@ int main()
     Network neural_net {};
     initialise_network(neural_net);
 
+    auto const test_set = zip(parse_images_file("assets/t10k-images-idx3-ubyte"),
+                              read_label_file("assets/t10k-labels-idx1-ubyte"));
+
+    fmt::print("Accuracy on test set before training was {}%\n", network_accuracy_percentage(neural_net, test_set));
+
     auto const start_time = std::chrono::system_clock::now();
+
+    stochastic_gradient_descent(neural_net, training_set, 10, 60, 0.2);
+
     auto const train_time = std::chrono::system_clock::now() - start_time;
-
-    stochastic_gradient_descent(neural_net, training_set, 1, 600, 2.5);
-
     auto const elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(train_time).count();
     fmt::print("Training finished in {}ms\n", elapsed_seconds);
 
 
     SDLAbstraction sdl_handle;
     InputState input {};
-
-    auto const test_set = zip(parse_images_file("assets/t10k-images-idx3-ubyte"),
-                               read_label_file("assets/t10k-labels-idx1-ubyte"));
 
     fmt::print("Accuracy on test set was {}%\n", network_accuracy_percentage(neural_net, test_set));
 //return 0;
