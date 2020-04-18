@@ -175,7 +175,7 @@ void load_input(InputLayer& input, Image const& image)
 }
 
 // TODO find better place for this
-constexpr std::array nodes_per_layer {28*28, 16, 5,10};
+constexpr std::array nodes_per_layer {28*28, 16, 16, 10};
 
 void initialise_network(Network& net)
 {
@@ -238,6 +238,7 @@ void feed_forward(Network& net,
 
     propagate_forward(net.input, net.layers.front());
     net.input.activation_values = net.input.stored_input;
+//    net.layers.front().activation_values.row
 
     long int n = 0;
     while (n < static_cast<long int>(net.layers.size()) - 1)
@@ -424,7 +425,7 @@ int main()
 
     auto const start_time = std::chrono::system_clock::now();
 
-    stochastic_gradient_descent(neural_net, training_set, 10, 60, 0.2);
+    stochastic_gradient_descent(neural_net, training_set, 10, 10, 0.2);
 
     auto const train_time = std::chrono::system_clock::now() - start_time;
     auto const elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(train_time).count();
@@ -434,7 +435,8 @@ int main()
     SDLAbstraction sdl_handle;
     InputState input {};
 
-    fmt::print("Accuracy on test set was {}%\n", network_accuracy_percentage(neural_net, test_set));
+    auto const test_accuracy = network_accuracy_percentage(neural_net, test_set);
+    fmt::print("Accuracy on test set was {}%\n", test_accuracy);
 //return 0;
     std::size_t image_index = 0;
     while (!input.should_quit)
@@ -456,7 +458,8 @@ int main()
 
             sdl_handle.draw_best_guess(calculate_best_guess(neural_net.output.activation_values));
             sdl_handle.draw_mnist_image(image);
-            sdl_handle.draw_network(40, 40, neural_net);
+            sdl_handle.draw_network(40, 100, neural_net);
+            sdl_handle.draw_accuracy(test_accuracy);
 
             sdl_handle.render_to_target();
             input.advance_image = false;
