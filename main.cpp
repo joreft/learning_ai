@@ -34,105 +34,13 @@ int calculate_best_guess(Eigen::Matrix<double, 10, 1> const& results)
 {
     auto const max_coeff = results.maxCoeff();
 
-//    std::cout << "Evaluating results\n";
-//    for (int i = 0; i < results.size(); ++i)
-//    {
-//        std::cout << i << " ---" << results(i) << "\n";
-//    }
-
     for (int i = 0; i < results.size(); ++i)
     {
         if (results[i] == max_coeff) return i;
     }
-    throw "oh no";
+    throw std::runtime_error(fmt::format("Failed to calculate guess based on max coefficient ", max_coeff));
 }
 
-//void train_network(SampleNetwork& net, std::vector<Image> const& images, std::vector<int> const& labels, float learning_rate)
-//{
-//    auto zipped = zip(images, labels);
-//
-//    std::random_device rd;
-//    std::mt19937 g(rd());
-//    std::shuffle(zipped.begin(), zipped.end(), g);
-//    const int batches = 600;
-//    auto const  batch_size = zipped.size() / batches; // only take the first 1/40 of the randomly shuffled samples
-//
-//    for (int iter = 0; iter < 1; ++iter)
-//    {
-//        std::shuffle(zipped.begin(), zipped.end(), g);
-//        for (std::size_t batch_counter = 0; batch_counter < batches; ++batch_counter)
-//        {
-//            std::vector<Eigen::Matrix<double, 10, 1>> biases_vec{};
-//            std::vector<Eigen::Matrix<double, 10, 16>> weights_vec{};
-//
-//            std::vector<Eigen::Matrix<double, 16, 1>> biases_vec_2 {};
-//            std::vector<Eigen::Matrix<double, 16, 784>> weights_vec_2 {};
-//
-//
-//            for (std::size_t i = 0; i < batch_size; ++i)
-//            {
-//                auto const &image = zipped.at(i + batch_size * batch_counter).image;
-//                auto const target = zipped.at(i + batch_size * batch_counter).label;
-//
-//                net.process_input(image_to_first_layer_activation_values(image));
-//
-//                auto res = net.backpropagate(target);
-//
-//                auto const res_1 = res.layer_3;
-//                auto const res_2 = res.layer_1;
-//                biases_vec.emplace_back(res_1.first);
-//                weights_vec.emplace_back(res_1.second);
-//
-//                biases_vec_2.emplace_back(res_2.first);
-//                weights_vec_2.emplace_back(res_2.second);
-//            }
-//
-//            Eigen::Matrix<double, 10, 1> biases_sum{};
-//            Eigen::Matrix<double, 10, 16> weights_sum{};
-//            for (auto const &val : biases_vec)
-//            {
-//                biases_sum += val;
-//            }
-//
-//            for (auto const &val : weights_vec)
-//            {
-//                weights_sum += val;
-//            }
-//
-//            Eigen::Matrix<double, 16, 1> biases_sum_2{};
-//            Eigen::Matrix<double, 16, 784> weights_sum_2{};
-//            for (auto const &val : biases_vec_2)
-//            {
-//                biases_sum_2 += val;
-//            }
-//
-//            for (auto const &val : weights_vec_2)
-//            {
-//                weights_sum_2 += val;
-//            }
-//
-//            auto nudge_bias = biases_sum / (double) batch_size;
-//            auto nudge_weights = weights_sum / (double) batch_size;
-//
-//            auto nudge_bias2 = biases_sum_2 / (double) batch_size;
-//            auto nudge_weights2 = weights_sum_2 / (double) batch_size;
-//
-//            auto constexpr eta = -0.5;
-//            net.second_layer.biases -= eta * nudge_bias;
-//            net.second_layer.weights -= eta * nudge_weights;
-//
-//            net.first_layer.biases -= eta * nudge_bias2;
-//            net.first_layer.weights -= eta * nudge_weights2;
-//        }
-//
-//        std::cout << "Iteration no " << iter << std::endl;
-//    }
-//}
-
-//struct Layer
-//{
-//
-//};
 namespace jeagle
 {
 
@@ -175,7 +83,7 @@ void load_input(InputLayer& input, Image const& image)
 }
 
 // TODO find better place for this
-constexpr std::array nodes_per_layer {28*28, 16, 16, 10};
+constexpr std::array nodes_per_layer {28*28, 16, 16, 10, 12,10};
 
 void initialise_network(Network& net)
 {
@@ -187,11 +95,6 @@ void initialise_network(Network& net)
 
     std::normal_distribution<> weights {0,1};
     std::normal_distribution<> biases {0,1};
-
-//    std::uniform_real_distribution<> biases {-2,2};
-//    std::uniform_real_distribution<> weights {-2,2};
-
-//    weights(g);
 
     auto init_matrix = [&generator](auto& mat, auto& dist)
     {
@@ -238,7 +141,6 @@ void feed_forward(Network& net,
 
     propagate_forward(net.input, net.layers.front());
     net.input.activation_values = net.input.stored_input;
-//    net.layers.front().activation_values.row
 
     long int n = 0;
     while (n < static_cast<long int>(net.layers.size()) - 1)
@@ -247,7 +149,7 @@ void feed_forward(Network& net,
         ++n;
     }
 
-        propagate_forward(net.layers.back(), net.output);
+    propagate_forward(net.layers.back(), net.output);
 }
 
 double network_accuracy_percentage(Network& net, std::vector<LabelImageZip> const& test_dataset)
@@ -292,7 +194,7 @@ std::vector<BackpropagationResult> run_backpropagation(Network& net, LabelImageZ
     feed_forward(net);
 
     // TODO: change with the activation function for the output layer
-    Eigen::VectorXd error;// = (net.output.activation_values - vectorized_result(3)).cwiseProduct(net.output.stored_input.unaryExpr(activation_derivative));
+    Eigen::VectorXd error;
 
     auto output_to_last_hidden_layer = [&]()
     {
@@ -327,6 +229,7 @@ std::vector<BackpropagationResult> run_backpropagation(Network& net, LabelImageZ
 
     // There is some confusing reverse iterator action going on here
     // The return value should be ordered from first layer to last
+    // and that's why (because we put it into the result from last to first)
     return {results.rbegin(), results.rend()};
 }
 
@@ -335,6 +238,7 @@ void process_mini_batch(Network& net, std::vector<LabelImageZip> const& training
     // Zero initialise accumulated nablas with correct dimensions
     std::vector<Eigen::VectorXd> biases;
     std::vector<Eigen::MatrixXd> weights;
+
     for (auto it = nodes_per_layer.cbegin(); it != (nodes_per_layer.cend() - 1); ++it)
     {
         Eigen::VectorXd bias(*(it + 1));
@@ -401,7 +305,6 @@ void stochastic_gradient_descent(Network& net, std::vector<LabelImageZip> traini
         }
         fmt::print("Finished with epoch {}/{}\n", epoch_counter + 1, epochs);
     }
-
 }
 
 } // namespace jeagle
@@ -425,7 +328,7 @@ int main()
 
     auto const start_time = std::chrono::system_clock::now();
 
-    stochastic_gradient_descent(neural_net, training_set, 10, 10, 0.2);
+    stochastic_gradient_descent(neural_net, training_set, 750, 60, 0.2);
 
     auto const train_time = std::chrono::system_clock::now() - start_time;
     auto const elapsed_seconds = std::chrono::duration_cast<std::chrono::milliseconds>(train_time).count();
@@ -437,7 +340,7 @@ int main()
 
     auto const test_accuracy = network_accuracy_percentage(neural_net, test_set);
     fmt::print("Accuracy on test set was {}%\n", test_accuracy);
-//return 0;
+
     std::size_t image_index = 0;
     while (!input.should_quit)
     {

@@ -117,7 +117,7 @@ struct SDLContextOwner
             std::cout << "SDL_Init failed with err: " << SDL_GetError() << "\n";
         }
 
-        auto const create_window_ret = SDL_CreateWindowAndRenderer(1000, 1000, 0, &window, &renderer);
+        auto const create_window_ret = SDL_CreateWindowAndRenderer(165, 1000, 0, &window, &renderer);
         if (create_window_ret != 0)
         {
             std::cout << "SDL_CreateWindowAndRenderer failed with err: " << SDL_GetError() << "\n";
@@ -263,9 +263,11 @@ struct SDLAbstraction
 
         auto constexpr x_spacing = 350;
 
-        auto const draw_lines = [&draw_line, offset_y, &offset_x, &layer_offset_x](std::vector<Line> const& lines)
+        auto const draw_lines = [&draw_line, offset_y, &offset_x, &layer_offset_x](std::vector<Line> lines)
         {
-            auto const max = std::max_element(lines.begin(), lines.end(), [](auto const& lhs, auto const& rhs){return lhs.impact < rhs.impact;});
+            auto comparator = [](auto const& lhs, auto const& rhs){return lhs.impact < rhs.impact;};
+            std::sort(lines.begin(), lines.end(), comparator);
+            auto const max = std::max_element(lines.begin(), lines.end(), comparator);
             for (auto const& line : lines)
             {
                 auto const x1 = offset_x + layer_offset_x + neuron_size / 2;
@@ -279,8 +281,10 @@ struct SDLAbstraction
             }
         };
         // draw line from each box to each in the next layer based on weight / max weight
-
+//
 //        draw_layer(net.input.activation_values);
+//        draw_lines(create_lines(net.input));
+//        layer_offset_x += x_spacing + neuron_size * 2;
 
         for (auto it = net.layers.begin(); (it < net.layers.end() - 1); ++it)
         {
